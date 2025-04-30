@@ -1,22 +1,15 @@
 services:
-  # ───────── REST ─────────
   - name: api-service
     type: web
     env: python
-
     buildCommand: "pip install -r requirements.txt"
     startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
-
-    healthCheckPath: /docs        # opcional
+    healthCheckPath: /docs
     autoDeploy: true
 
-  # ───────── SOCKET.IO ────────
   - name: socket-service
     type: web
     env: python
-
     buildCommand: "pip install -r requirements.txt"
     startCommand: "uvicorn app.sockets.realtime:socket_app --host 0.0.0.0 --port $PORT"
-
-    websocketSupport: true        #  ← va aquí, sin clave “web:”
-    autoDeploy: true
+    autoDeploy: true    
