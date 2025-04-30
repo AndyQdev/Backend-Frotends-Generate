@@ -723,7 +723,18 @@ def crear_proyecto(
 
 @router.get("/", response_model=ProyectoListResponse)
 def listar_proyectos(db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
-    proyectos = db.query(ProyectoModel).filter_by(owner_id=current_user.id).all()
+    if current_user.is_main:
+        # Usuario es administrador: proyectos que creó
+        proyectos = db.query(ProyectoModel).filter_by(owner_id=current_user.id).all()
+    else:
+        # Usuario es colaborador: proyectos donde fue asignado
+        proyectos = (
+            db.query(ProyectoModel)
+            .join(ColaboradorProyecto, ColaboradorProyecto.proyecto_id == ProyectoModel.id)
+            .filter(ColaboradorProyecto.usuario_id == current_user.id)
+            .all()
+        )
+
     return {
         "data": proyectos,
         "countData": len(proyectos)
@@ -1555,6 +1566,84 @@ npm run start
                 </div>
                 </div>
                 '''
+            elif component["type"] == "select":
+                style = (
+                    f"position: absolute;"
+                    f"left: {component['x']}px;"
+                    f"top: {component['y']}px;"
+                    f"width: {component['width']}px;"
+                    f"height: {component['height']}px;"
+                    f"background-color: {component.get('backgroundColor', '#ffffff')};"
+                )
+                options = component.get("options", [])
+                value = component.get("value", "")
+
+                options_html = "\n".join([
+                    f'<option value="{opt}" {"selected" if opt == value else ""}>{opt}</option>'
+                    for opt in options
+                ])
+
+                html_content += f"""
+                <select
+                    class="{tailwind_classes}"
+                    style="{style}">
+                    {options_html}
+                </select>
+                """
+            elif component["type"] == "radiobutton":
+                style = (
+                    f"position: absolute;"
+                    f"left: {component['x']}px;"
+                    f"top: {component['y']}px;"
+                    f"width: {component['width']}px;"
+                    f"height: {component['height']}px;"
+                )
+                options = component.get("options", [])
+                selected = component.get("selected", "")
+                name = component.get("name", f"radio-{component['id']}")
+
+                radio_items = "\n".join([
+                    f'''
+                    <label class="flex items-center gap-2">
+                        <input type="radio" name="{name}" value="{opt}" {"checked" if opt == selected else ""} />
+                        <span>{opt}</span>
+                    </label>
+                    ''' for opt in options
+                ])
+
+                html_content += f"""
+                <div class="{tailwind_classes}" style="{style}">
+                    {radio_items}
+                </div>
+                """
+            elif component["type"] == "checklist":
+                style = (
+                    f"position: absolute;"
+                    f"left: {component['x']}px;"
+                    f"top: {component['y']}px;"
+                    f"width: {component['width']}px;"
+                    f"height: {component['height']}px;"
+                )
+                title = component.get("title", "")
+                items = component.get("items", [])
+
+                checklist_items = "\n".join([
+                    f'''
+                    <li class="flex items-center gap-2">
+                        <input type="checkbox" {"checked" if item['checked'] else ""} />
+                        <span class="{ 'line-through text-gray-500' if item['checked'] else '' }">{item['label']}</span>
+                    </li>
+                    ''' for item in items
+                ])
+
+                html_content += f"""
+                <div class="{tailwind_classes}" style="{style}">
+                    <h3 class="font-semibold text-lg mb-2">{title}</h3>
+                    <ul class="space-y-1">
+                        {checklist_items}
+                    </ul>
+                </div>
+                """
             elif component["type"] == "listar":
                 needs_listar = True
                 listar_rows = component["dataTable"]["rows"]
