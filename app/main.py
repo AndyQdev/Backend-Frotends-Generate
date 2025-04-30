@@ -20,3 +20,5 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(proyectos.router)
+from app.sockets.realtime import socket_app  
+app.mount("/ws", socket_app)    
